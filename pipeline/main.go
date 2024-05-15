@@ -45,7 +45,7 @@ func (r *RingIntBuffer) Push(elem int) {
 
 }
 
-// Get - позволяет получить элемент из буфера. Метод возвращает слайс
+// Get - позволяет получить элемент из буфера. Метод возвращает слайс.
 func (r *RingIntBuffer) Get() []int {
 	if r.pos <= 0 {
 		return nil
