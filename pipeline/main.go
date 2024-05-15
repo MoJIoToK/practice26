@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -60,50 +64,73 @@ func (r *RingIntBuffer) Get() []int {
 
 // read - метод позволяющий читать данные с консоли и записывать их в канал.
 func read(input chan<- int) {
-	for {
-		var u int
-		_, err := fmt.Scanf("%d\n", &u)
+	log.Printf("Start read stage!")
+	scanner := bufio.NewScanner(os.Stdin)
+	var data string
+	for scanner.Scan() {
+		data = scanner.Text()
+		log.Printf("Data input %v", data)
+		if strings.EqualFold(data, "exit") {
+			fmt.Println("Program exits!")
+			log.Printf("Сlosing the program by the user")
+			return
+		}
+		number, err := strconv.Atoi(data)
+		log.Printf("Text %v transformed to digit", data)
 		if err != nil {
+			log.Printf("Error! Entered not a number!")
 			fmt.Println("This is not the number!")
 		}
-		input <- u
+		input <- number
+		log.Printf("End read stage!")
 	}
 }
 
 // removeNegatives - метод реализует стадию фильтрации данных в канале чисел меньше нуля.
 func removeNegatives(currentChannel <-chan int, nextChan chan<- int) {
+	log.Printf("Start negative filter stage!")
 	for number := range currentChannel {
 		if number >= 0 {
+			log.Printf("Number more than or equals 0!")
 			nextChan <- number
 		}
 	}
+	log.Printf("End negative filter stage!")
 }
 
 // removeDivThree - метод реализует стадию фильтрации данных канала не кратных 3. Исключая 0.
 func removeDivThree(currentChannel <-chan int, nextChan chan<- int) {
+	log.Printf("Start div 3 filter stage!")
 	for number := range currentChannel {
 		if number%3 == 0 {
+			log.Printf("Number div 3!")
 			nextChan <- number
 		}
 	}
+	log.Printf("End div 3 filter stage!")
 }
 
 // writeToBuffer - метод записывающий данные канала в кольцевой буфер. По сути обертка метода Push() для каждого
 // элемента в канале.
 func writeToBuffer(currentChannel <-chan int, r *RingIntBuffer) {
+	log.Printf("Start write number in ringBuffer stage!")
 	for number := range currentChannel {
 		r.Push(number)
 	}
+	log.Printf("End write number in ringBuffer stage!")
 }
 
 // writeToConsole - метод считывающие данные из кольцевого буфера и выводящий в консоль.
 func writeToConsole(r *RingIntBuffer, ticker *time.Ticker) {
+	log.Printf("Start write number in console stage!")
 	for range ticker.C {
 		buffer := r.Get()
 		if len(buffer) > 0 {
+			log.Printf("Output data to the console!")
 			fmt.Println("The buffer is", buffer)
 		}
 	}
+	log.Printf("End write number in console stage!")
 }
 
 func main() {
@@ -131,7 +158,7 @@ func main() {
 	signal.Notify(c, os.Interrupt)
 	select {
 	case sig := <-c:
-		fmt.Println("Got %s signal. Aborting ...", sig)
+		fmt.Printf("Got %s signal. Aborting ...", sig)
 		os.Exit(0)
 
 	}
